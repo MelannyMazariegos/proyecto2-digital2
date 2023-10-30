@@ -1,86 +1,46 @@
 #include <Arduino.h>
 #define RXp2 16
-#define TXp2 17
-//int mandar;
-#define samp_siz 4 
-#define rise_threshold 5 
-// Pulse Monitor Test Script 
+#define TXp2 17 
 int sensorPin = 36; 
 int recibir;
+float factor = 0.75;		// coeficiente para filtro pasa bajos
+float maximo = 0.0;		// para almacenar valor maximo 
+int minimoEntreLatidos = 300;	// 300 mseg. de tiempo minimo entre latidos
+float valorAnterior = 500;	// para almacenar valor previo
+int latidos = 0;		// contador de cantidad de latidos
+int BPM = 0;
 void setup() {
   Serial.begin(9600);
   Serial2.begin(9600);
 }
 
 void loop() {
-  float reads[samp_siz], sum; 
-	long int now, ptr; 
-	float last, reader, start; 
-	float first, second, third, before, print_value; 
-	bool rising; 
-	int rise_count; 
-	int n; 
-	long int last_beat; 
-	for (int i = 0; i < samp_siz; i++){ 
-	  reads[i] = 0; 
-  }
-	sum = 0; 
-	ptr = 0; 
-	while(1) { 
-	  // calculate an average of the sensor 
-	  // during a 20 ms period (this will eliminate 
-	  // the 50 Hz noise caused by electric light 
-	  n = 0; 
-	  start = millis(); 
-	  reader = 0.; 
-	  do { 
-      reader += analogRead (sensorPin); 
-	    n++; 
-	    now = millis(); 
-    } 
-	  while (now < start + 20);   
-	  reader /= n;  // we got an average 
-	  // Add the newest measurement to an array 
-	  // and subtract the oldest measurement from the array 
-	  // to maintain a sum of last measurements 
-	  sum -= reads[ptr]; 
-	  sum += reader; 
-	  reads[ptr] = reader; 
-	  last = sum / samp_siz; 
-	  // now last holds the average of the values in the array 
-	  // check for a rising curve (= a heart beat) 
-	  if (last > before) { 
-      rise_count++; 
-	    if (!rising && rise_count > rise_threshold) { 
-	      // Ok, we have detected a rising curve, which implies a heartbeat. 
-	      // Record the time since last beat, keep track of the two previous 
-	      // times (first, second, third) to get a weighed average. 
-	      // The rising flag prevents us from detecting the same rise  
-	      // more than once. 
-	      rising = true; 
-	      first = millis() - last_beat; 
-	      last_beat = millis(); 
-	      // Calculate the weighed average of heartbeat rate 
-	      // according to the three last beats 
-	      print_value = 60000. / (0.4 * first + 0.3 * second + 0.3 * third); 
-	      third = second; 
-	      second = first; 
-	    } 
-	  } 
-	  else { 
-	    // Ok, the curve is falling 
-	    rising = false; 
-	    rise_count = 0; 
-	  } 
-	  before = last; 
-	  ptr++; 
-	  ptr %= samp_siz; 
-	} 
-  if(Serial2.available()>0){
-    recibir = Serial2.parseInt();
-    if (recibir == 3){
-      Serial.println(print_value);
-      Serial2.println(print_value);
-    }
+  static unsigned long tiempoLPM = millis();	// tiempo Latidos Por Minuto con
+						// valor actual devuelto por millis()
+  static unsigned long entreLatidos = millis(); // tiempo entre Latidos con
+						// valor actual devuelto por millis()
+
+  int valorLeido = analogRead(sensorPin);		// lectura de entrada analogica A0
+
+  float valorFiltrado = factor * valorAnterior + (1 - factor) * valorLeido;	// filtro pasa bajos
+  float cambio = valorFiltrado - valorAnterior;		// diferencia entre valor filtrado y
+							// valor anterior
+  valorAnterior = valorFiltrado;		// actualiza valor anterior con valor filtrado
+
+  if ((cambio >= maximo) && (millis() > entreLatidos + minimoEntreLatidos)) {	// si cambio es
+					// es mayor o igual a maximo y pasaron al menos 300 mseg.
+    maximo = cambio;			// actualiza maximo con valor de cambo
+    entreLatidos = millis();		// actualiza variable entreLatidos con millis()
+    latidos++;				// incrementa latidos en uno
+  }  
+  maximo = maximo * 0.97;		// carga maximo como el 97 por ciento de su propio
+					// valor para dejar decaer y no perder pulsos
+
+  if (millis() >= tiempoLPM + 15000) {		// si transcurrieron al menos 15 segundos
+    BPM = latidos*4;
+    Serial2.println(BPM);
+    Serial.println(BPM);
+    latidos = 0;				// coloca contador de latidos en cero
+    tiempoLPM = millis();			// actualiza variable con valor de millis()
   }
 }

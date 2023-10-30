@@ -1,3 +1,7 @@
+#include <bitmaps.h>
+#include <font.h>
+#include <lcd_registers.h>
+
 #define RXp2 PD6 //Pines para la comunicacion entre esp32 y Tiva C
 #define TXp2 PD7
 const int guardar = PUSH2;
@@ -15,13 +19,12 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-   mandar = digitalRead(medir);
-   if(mandar == 0){
-    Serial2.println('3');
-   }
+  mandar = digitalRead(medir);
+  if(mandar == LOW){
    if (Serial2.available()>0){
-    latido = Serial2.parseInt();
-    String incomingData = Serial2.readStringUntil('\n');
-    Serial.print(latido);
-   }
+     latido = Serial2.parseInt();
+     String incomingData = Serial2.readStringUntil('\n');
+     Serial.println(latido);
+  }
+ }
 }
