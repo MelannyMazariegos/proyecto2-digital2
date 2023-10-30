@@ -1,20 +1,18 @@
 #include <Arduino.h>
-
+#define RXp2 16
+#define TXp2 17
 //int mandar;
 #define samp_siz 4 
 #define rise_threshold 5 
 // Pulse Monitor Test Script 
 int sensorPin = 36; 
-
+int recibir;
 void setup() {
-  Serial.begin(115200);
-  //Serial2.begin(115200);
+  Serial.begin(9600);
+  Serial2.begin(9600);
 }
 
 void loop() {
-  //if(Serial2.available()>0){
-
-  //}
   float reads[samp_siz], sum; 
 	long int now, ptr; 
 	float last, reader, start; 
@@ -65,8 +63,6 @@ void loop() {
 	      // Calculate the weighed average of heartbeat rate 
 	      // according to the three last beats 
 	      print_value = 60000. / (0.4 * first + 0.3 * second + 0.3 * third); 
-	      Serial.print(print_value); 
-	      Serial.print('\n'); 
 	      third = second; 
 	      second = first; 
 	    } 
@@ -80,4 +76,11 @@ void loop() {
 	  ptr++; 
 	  ptr %= samp_siz; 
 	} 
+  if(Serial2.available()>0){
+    recibir = Serial2.parseInt();
+    if (recibir == 3){
+      Serial.println(print_value);
+      Serial2.println(print_value);
+    }
+  }
 }
