@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <TM4C123GH6PM.h>
 #include <SPI.h>
+#include <SD.h>
 #include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
@@ -48,8 +49,9 @@ int melodia[] = {262, 196, 196, 220, 196, 0, 247, 262};
 int duracionNotas[] = {4, 8, 8, 4, 4, 4, 4, 4};
 int gan_melody[] = {330, 392, 330, 392, 0, 392, 440, 440};
 int duraciones[] = {8, 8, 4, 4, 4, 4, 4, 4};
-const int BUZZER = 5;
+//const int BUZZER = 5;
 const int guardar = PUSH2;
+File myFile;
 const int medir = PUSH1;
 int latido;
 int mandar;
@@ -59,12 +61,19 @@ int mandar;
 void setup() {
   SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ);
   Serial.begin(9600);
-  Serial2.begin(9600);
+  //Serial2.begin(9600);
   SPI.setModule(0);
+  Serial.print("Initializing SD card...");
+  if (!SD.begin(32)) {
+    //Si falla se muestra este mensaje
+    Serial.println("initialization failed!");
+    return;
+  }
+  //Si es exitosa se muestra este mensaje
+  Serial.println("initialization done.");
   pinMode(guardar, INPUT_PULLUP);
   pinMode(medir, INPUT_PULLUP);
-  pinMode(BUZZER, OUTPUT);
-  Serial.println("Inicio");
+  //pinMode(BUZZER, OUTPUT);
   LCD_Init();
   LCD_Clear(0x00);
   LCD_Bitmap(30, 90, 64, 65, fondo);
@@ -93,14 +102,14 @@ void setup() {
 // Loop Infinito
 //***************************************************************************************************************************************
 void loop() {
-  mandar = digitalRead(medir);
-  if(mandar == LOW){
-   while(Serial2.available()>0){
-    latido = Serial2.parseInt();
-    if(latido >0){
-      Serial2.println(latido);
-    }
-   }
+  //mandar = digitalRead(medir);
+  //if(mandar == LOW){
+   //while(Serial2.available()>0){
+    //latido = Serial2.parseInt();
+    //if(latido >0){
+      //Serial2.println(latido);
+    //}
+   //}
    //for(int i = 0; i < 8; i++){
   //  int duracionNota = 1000/duracionNotas[i];
     //tone(BUZZER, melodia[i],duracionNotas);
@@ -108,7 +117,7 @@ void loop() {
   //  delay(pausaEntreNotas);
     //noTone(BUZZER);
  //  }
-  }
+  //}
 /*  
   for(int x = 0; x <320-32; x++){
     delay(15);
