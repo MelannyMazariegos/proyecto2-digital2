@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #define RXp2 16
 #define TXp2 17 
-int sensorPin = 36; 
+int sensorPin = 35; 
 int recibir;
 float factor = 0.75;		// coeficiente para filtro pasa bajos
 float maximo = 0.0;		// para almacenar valor maximo 
@@ -39,8 +39,13 @@ void loop() {
   if (millis() >= tiempoLPM + 15000) {		// si transcurrieron al menos 15 segundos
     BPM = latidos*4;
     Serial2.println(BPM);
-    Serial.println(BPM);
     latidos = 0;				// coloca contador de latidos en cero
     tiempoLPM = millis();			// actualiza variable con valor de millis()
   }
+  if (Serial2.available()>0){
+    String mensaje = Serial2.readStringUntil('\n');
+    Serial.print("BPM: ");
+    Serial.println(mensaje);
+  }
+  delay(50);
 }
