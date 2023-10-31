@@ -43,25 +43,27 @@ void LCD_Print(String text, int x, int y, int fontSize, int color, int backgroun
 void LCD_Bitmap(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char bitmap[]);
 void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int columns, int index, char flip, char offset);
 extern uint8_t fondo[];
+extern uint8_t roto[];
 #define RXp2 PD6 //Pines para la comunicacion entre esp32 y Tiva C
 #define TXp2 PD7
 int melodia[] = {262, 196, 196, 220, 196, 0, 247, 262};
 int duracionNotas[] = {4, 8, 8, 4, 4, 4, 4, 4};
 int gan_melody[] = {330, 392, 330, 392, 0, 392, 440, 440};
 int duraciones[] = {8, 8, 4, 4, 4, 4, 4, 4};
-//const int BUZZER = 5;
 const int guardar = PUSH2;
+const int BUZZER = 40;
 File myFile;
 const int medir = PUSH1;
 int latido;
 int mandar;
+int memoria;
 //***************************************************************************************************************************************
 // Inicialización
 //***************************************************************************************************************************************
 void setup() {
   SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ);
   Serial.begin(9600);
-  //Serial2.begin(9600);
+  Serial2.begin(9600);
   SPI.setModule(0);
   Serial.print("Initializing SD card...");
   if (!SD.begin(32)) {
@@ -73,51 +75,69 @@ void setup() {
   Serial.println("initialization done.");
   pinMode(guardar, INPUT_PULLUP);
   pinMode(medir, INPUT_PULLUP);
-  //pinMode(BUZZER, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
   LCD_Init();
-  LCD_Clear(0x00);
-  LCD_Bitmap(30, 90, 64, 65, fondo);
-  /*FillRect(0, 0, 319, 206, 0x421b);
-  String text1 = "Aqui mandandole";
-  LCD_Print(text1, 10, 100, 2, 0xffff, 0x421b);
-
-  String text2 = "un saludo al";
-  LCD_Print(text2, 10, 140, 2, 0xffff, 0x421b);
-
-  String text3 = "   totio";
-  LCD_Print(text3, 20, 180, 2, 0xffff, 0x421b);
+  LCD_Clear(0xffff);
+  FillRect(0, 0, 320, 80, 0xff00);
   
-  for(int x = 0; x <319; x++){
-    LCD_Bitmap(x, 52, 16, 16, tile2);
-    LCD_Bitmap(x, 68, 16, 16, tile);
-    
-    LCD_Bitmap(x, 207, 16, 16, tile);
-    LCD_Bitmap(x, 223, 16, 16, tile);
-    x += 15;
- }
- */
+  String text1 = "Proyecto Digital 2";
+  LCD_Print(text1, 10, 10, 2, 0xffff, 0x00);
+
+  String text2 = "Sensor cardiaco";
+  LCD_Print(text2, 10, 40, 2, 0x00ff, 0x0f0f);
   delay(5000);
 }
 //***************************************************************************************************************************************
 // Loop Infinito
 //***************************************************************************************************************************************
 void loop() {
-  //mandar = digitalRead(medir);
-  //if(mandar == LOW){
-   //while(Serial2.available()>0){
-    //latido = Serial2.parseInt();
-    //if(latido >0){
-      //Serial2.println(latido);
-    //}
-   //}
-   //for(int i = 0; i < 8; i++){
-  //  int duracionNota = 1000/duracionNotas[i];
-    //tone(BUZZER, melodia[i],duracionNotas);
-//    int pausaEntreNotas = duracionNota * 1.30;
-  //  delay(pausaEntreNotas);
-    //noTone(BUZZER);
- //  }
-  //}
+  mandar = digitalRead(medir);
+  memoria = digitalRead(guardar);
+  if(mandar == LOW){
+    while(Serial2.available()){
+      latido = Serial2.parseInt();
+      if(latido >0){
+        Serial2.print("BPM: ");
+        Serial2.println(latido);
+        Serial.println(latido);
+        String text3 = "BPM: ";
+        text3 += String(latido);
+        LCD_Print(text3, 120, 130, 2, 0x00ff, 0x0f0f);
+        if (latido > 59){
+          LCD_Bitmap(30, 110, 64, 65, fondo);
+        }
+        else{
+          LCD_Bitmap(30, 110, 64, 65, roto);
+        }
+      }
+    }
+    for(int i = 0; i < 8; i++){
+      int duracionNota = 1000/duracionNotas[i];
+      tone(BUZZER, melodia[i],duracionNota);
+      int pausaEntreNotas = duracionNota * 1.30;
+      delay(pausaEntreNotas);
+      noTone(BUZZER);
+    }
+  }
+  if(mandar == LOW){
+    myFile = SD.open("pulso.txt", FILE_WRITE);
+    if (myFile){
+      myFile.print("BPM: ");
+      myFile.println(latido);
+      myFile.close();
+      Serial.println("Dato recbido");
+      for(int i = 0; i < 8; i++){
+        int duracion = 1000/duraciones[i];
+        tone(BUZZER, gan_melody[i],duracion);
+        int pausaNotas = duracion * 1.30;
+        delay(pausaNotas);
+        noTone(BUZZER);
+      }
+    }
+    else{
+      Serial.println("Error al abrir el archivo");
+    }
+  }
 /*  
   for(int x = 0; x <320-32; x++){
     delay(15);

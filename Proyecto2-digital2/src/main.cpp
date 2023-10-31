@@ -1,30 +1,27 @@
 #include <Arduino.h>
-#define RXp2 16
+#define RXp2 16 //Pines para la comunicacion entre Esp32 y Tiva c
 #define TXp2 17 
-int sensorPin = 35; 
-int recibir;
-float factor = 0.75;		// coeficiente para filtro pasa bajos
-float maximo = 0.0;		// para almacenar valor maximo 
-int minimoEntreLatidos = 300;	// 300 mseg. de tiempo minimo entre latidos
-float valorAnterior = 500;	// para almacenar valor previo
+int sensorPin = 35; //Pin del sensor
+float factor = 0.75;		// coeficiente para filtro pasa bajas
+float maximo = 0.0;		// valor maximo
+int minimoEntreLatidos = 300;	// tiempo minimo entre latidos
+float valorAnterior = 500;	// almacenar valor anterior
 int latidos = 0;		// contador de cantidad de latidos
 int BPM = 0;
 void setup() {
+  //Se inicializan los monitores seriales
   Serial.begin(9600);
   Serial2.begin(9600);
 }
 
 void loop() {
-  static unsigned long tiempoLPM = millis();	// tiempo Latidos Por Minuto con
-						// valor actual devuelto por millis()
-  static unsigned long entreLatidos = millis(); // tiempo entre Latidos con
-						// valor actual devuelto por millis()
+  static unsigned long tiempoLPM = millis();	// tiempo Latidos Por Minuto con valor actual devuelto por millis()
+  static unsigned long entreLatidos = millis(); // tiempo entre Latidos con valor actual devuelto por millis()
 
-  int valorLeido = analogRead(sensorPin);		// lectura de entrada analogica A0
+  int valorLeido = analogRead(sensorPin);		// lectura del sensor
 
-  float valorFiltrado = factor * valorAnterior + (1 - factor) * valorLeido;	// filtro pasa bajos
-  float cambio = valorFiltrado - valorAnterior;		// diferencia entre valor filtrado y
-							// valor anterior
+  float valorFiltrado = factor * valorAnterior + (1 - factor) * valorLeido;	// filtro pasa bajas
+  float cambio = valorFiltrado - valorAnterior;		// diferencia entre valor filtrado y valor anterior
   valorAnterior = valorFiltrado;		// actualiza valor anterior con valor filtrado
 
   if ((cambio >= maximo) && (millis() > entreLatidos + minimoEntreLatidos)) {	// si cambio es
@@ -42,10 +39,9 @@ void loop() {
     latidos = 0;				// coloca contador de latidos en cero
     tiempoLPM = millis();			// actualiza variable con valor de millis()
   }
-  if (Serial2.available()>0){
+  delay(50);
+  while (Serial2.available()){
     String mensaje = Serial2.readStringUntil('\n');
-    Serial.print("BPM: ");
     Serial.println(mensaje);
   }
-  delay(50);
 }
