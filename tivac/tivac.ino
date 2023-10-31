@@ -66,7 +66,7 @@ void setup() {
   Serial2.begin(9600);
   SPI.setModule(0);
   Serial.print("Initializing SD card...");
-  if (!SD.begin(32)) {
+  if (!SD.begin(38)) {
     //Si falla se muestra este mensaje
     Serial.println("initialization failed!");
     return;
@@ -107,7 +107,7 @@ void loop() {
           LCD_Bitmap(30, 110, 64, 65, fondo);
         }
         else{
-          LCD_Bitmap(30, 110, 64, 65, roto);
+          LCD_Bitmap(30, 110, 70, 57, roto);
         }
       }
     }
@@ -119,6 +119,7 @@ void loop() {
       noTone(BUZZER);
     }
   }
+  
   if(mandar == LOW){
     myFile = SD.open("pulso.txt", FILE_WRITE);
     if (myFile){
