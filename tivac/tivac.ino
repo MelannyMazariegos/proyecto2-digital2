@@ -1,6 +1,8 @@
+//Se incluyen libreras
 #include <stdint.h>
 #include <stdbool.h>
 #include <TM4C123GH6PM.h>
+//Libreria para el SPI
 #include <SPI.h>
 #include <SD.h>
 #include "inc/hw_ints.h"
@@ -94,13 +96,18 @@ void loop() {
   mandar = digitalRead(medir);
   memoria = digitalRead(guardar);
   if(mandar == LOW){
-    while(Serial2.available()){
+    if(Serial2.available()){
       latido = Serial2.parseInt();
       if(latido >0){
         Serial2.print("BPM: ");
         Serial2.println(latido);
-        Serial.println(latido);
         String text3 = "BPM: ";
+        if(latido<100){
+          text3 += "0";
+        }
+        if(latido<10){
+          text3+= "0";
+        }
         text3 += String(latido);
         LCD_Print(text3, 120, 130, 2, 0x00ff, 0x0f0f);
         if (latido > 59){
@@ -109,24 +116,24 @@ void loop() {
         else{
           LCD_Bitmap(30, 110, 70, 57, roto);
         }
+        for(int i = 0; i < 8; i++){
+          int duracionNota = 1000/duracionNotas[i];
+          tone(BUZZER, melodia[i],duracionNota);
+          int pausaEntreNotas = duracionNota * 1.30;
+          delay(pausaEntreNotas);
+          noTone(BUZZER);
+        }
       }
-    }
-    for(int i = 0; i < 8; i++){
-      int duracionNota = 1000/duracionNotas[i];
-      tone(BUZZER, melodia[i],duracionNota);
-      int pausaEntreNotas = duracionNota * 1.30;
-      delay(pausaEntreNotas);
-      noTone(BUZZER);
     }
   }
   
-  if(mandar == LOW){
+  if(memoria == LOW){
     myFile = SD.open("pulso.txt", FILE_WRITE);
     if (myFile){
       myFile.print("BPM: ");
       myFile.println(latido);
       myFile.close();
-      Serial.println("Dato recbido");
+      Serial.println("Dato recibido");
       for(int i = 0; i < 8; i++){
         int duracion = 1000/duraciones[i];
         tone(BUZZER, gan_melody[i],duracion);
@@ -139,55 +146,6 @@ void loop() {
       Serial.println("Error al abrir el archivo");
     }
   }
-/*  
-  for(int x = 0; x <320-32; x++){
-    delay(15);
-    int anim2 = (x/35)%2;
-    
-    LCD_Sprite(x,100,16,24,planta,2,anim2,0,1);
-    V_line( x -1, 100, 24, 0x421b);
-    
-    //LCD_Bitmap(x, 100, 32, 32, prueba);
-    
-    int anim = (x/11)%8;
-    
-
-    int anim3 = (x/11)%4;
-    
-    LCD_Sprite(x, 20, 16, 32, mario,8, anim,1, 0);
-    V_line( x -1, 20, 32, 0x421b);
- 
-    //LCD_Sprite(x,100,32,32,bowser,4,anim3,0,1);
-    //V_line( x -1, 100, 32, 0x421b);
- 
- 
-    LCD_Sprite(x, 140, 16, 16, enemy,2, anim2,1, 0);
-    V_line( x -1, 140, 16, 0x421b);
-  
-    LCD_Sprite(x, 175, 16, 32, luigi,8, anim,1, 0);
-    V_line( x -1, 175, 32, 0x421b);
-  }
-  
-  for(int x = 320-32; x >0; x--){
-    delay(5);
-    int anim = (x/11)%8;
-    int anim2 = (x/11)%2;
-    
-    LCD_Sprite(x,100,16,24,planta,2,anim2,0,0);
-    V_line( x + 16, 100, 24, 0x421b);
-    
-    //LCD_Bitmap(x, 100, 32, 32, prueba);
-    
-    LCD_Sprite(x, 140, 16, 16, enemy,2, anim2,0, 0);
-    V_line( x + 16, 140, 16, 0x421b);
-    
-    LCD_Sprite(x, 175, 16, 32, luigi,8, anim,0, 0);
-    V_line( x + 16, 175, 32, 0x421b);
-
-    LCD_Sprite(x, 20, 16, 32, mario,8, anim,0, 0);
-    V_line( x + 16, 20, 32, 0x421b);
-  } 
-*/
 }
 //***************************************************************************************************************************************
 // Función para inicializar LCD
