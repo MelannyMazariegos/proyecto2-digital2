@@ -15,8 +15,8 @@ void setup() {
 }
 
 void loop() {
-  static unsigned long tiempoLPM = millis();	// tiempo Latidos Por Minuto con valor actual devuelto por millis()
-  static unsigned long entreLatidos = millis(); // tiempo entre Latidos con valor actual devuelto por millis()
+  static unsigned long tiempoLPM = millis();	// tiempo para latidos por minuto
+  static unsigned long entreLatidos = millis(); // tiempo entre latidos
 
   int valorLeido = analogRead(sensorPin);		// lectura del sensor
 
@@ -24,24 +24,23 @@ void loop() {
   float cambio = valorFiltrado - valorAnterior;		// diferencia entre valor filtrado y valor anterior
   valorAnterior = valorFiltrado;		// actualiza valor anterior con valor filtrado
 
-  if ((cambio >= maximo) && (millis() > entreLatidos + minimoEntreLatidos)) {	// si cambio es
-					// es mayor o igual a maximo y pasaron al menos 300 mseg.
-    maximo = cambio;			// actualiza maximo con valor de cambo
-    entreLatidos = millis();		// actualiza variable entreLatidos con millis()
-    latidos++;				// incrementa latidos en uno
+  if ((cambio >= maximo) && (millis() > entreLatidos + minimoEntreLatidos)) {	
+    maximo = cambio;			// actualiza el valor maximo
+    entreLatidos = millis();		// actualiza el tiempo entre latidos
+    latidos++;				// incrementa en uno los latidos
   }  
-  maximo = maximo * 0.97;		// carga maximo como el 97 por ciento de su propio
-					// valor para dejar decaer y no perder pulsos
+  maximo = maximo * 0.97;		// carga maximo como el 97 por ciento de su propio valor para dejar decaer y no perder pulsos
 
-  if (millis() >= tiempoLPM + 15000) {		// si transcurrieron al menos 15 segundos
-    BPM = latidos*4;
-    Serial2.println(BPM);
-    latidos = 0;				// coloca contador de latidos en cero
-    tiempoLPM = millis();			// actualiza variable con valor de millis()
+  if (millis() >= tiempoLPM + 15000) {		// tiempo que transcurre para medir el pulso
+    BPM = latidos*4; //Calculo para la frecuencia cardiaca
+    Serial2.println(BPM); //Se manda este dato a tiva c
+    latidos = 0;				// resetea el contador de latidos
+    tiempoLPM = millis();			// actualiza el tiempo de latidos por minutos
   }
   delay(50);
+  //Para recibir datos del tiva C
   while (Serial2.available()){
     String mensaje = Serial2.readStringUntil('\n');
-    Serial.println(mensaje);
+    Serial.println(mensaje); //Se imprime el dato en el monitor serial
   }
 }

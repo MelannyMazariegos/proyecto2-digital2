@@ -48,25 +48,29 @@ extern uint8_t fondo[];
 extern uint8_t roto[];
 #define RXp2 PD6 //Pines para la comunicacion entre esp32 y Tiva C
 #define TXp2 PD7
-int melodia[] = {262, 196, 196, 220, 196, 0, 247, 262};
-int duracionNotas[] = {4, 8, 8, 4, 4, 4, 4, 4};
-int gan_melody[] = {330, 392, 330, 392, 0, 392, 440, 440};
-int duraciones[] = {8, 8, 4, 4, 4, 4, 4, 4};
-const int guardar = PUSH2;
-const int BUZZER = 40;
-File myFile;
-const int medir = PUSH1;
-int latido;
-int mandar;
-int memoria;
+//Variables para las melodias del buzzer
+int melodia[] = {262, 196, 196, 220, 196, 0, 247, 262}; //Frecuencia de notas para melodia 1
+int duracionNotas[] = {4, 8, 8, 4, 4, 4, 4, 4}; //Duracion de las notas de la melodia 1
+int gan_melody[] = {330, 392, 330, 392, 0, 392, 440, 440}; //Frecuencia de notas para melodia 2
+int duraciones[] = {8, 8, 4, 4, 4, 4, 4, 4}; //Duracion de las notas de la melodia 2
+const int guardar = PUSH2; //Pin del boton 2
+const int BUZZER = 40; //Pin del buzzer
+File myFile; //Variable para la micro SD
+const int medir = PUSH1; //Pin del boton 1
+int latido; //Variable para guardar el dato
+int mandar; //Variable para el estado del boton 1
+int memoria; //Variable para el estado del boton 2
 //***************************************************************************************************************************************
 // Inicialización
 //***************************************************************************************************************************************
 void setup() {
   SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ);
+  //Se inician los monitores seriales
   Serial.begin(9600);
   Serial2.begin(9600);
+  //Se declara el modulo para la SPI
   SPI.setModule(0);
+  //Se inicializa la micro SD
   Serial.print("Initializing SD card...");
   if (!SD.begin(38)) {
     //Si falla se muestra este mensaje
@@ -75,13 +79,15 @@ void setup() {
   }
   //Si es exitosa se muestra este mensaje
   Serial.println("initialization done.");
+  //Se declaran las salidas y entradas
   pinMode(guardar, INPUT_PULLUP);
   pinMode(medir, INPUT_PULLUP);
   pinMode(BUZZER, OUTPUT);
+  //Configuracion de la pantalla TFT
   LCD_Init();
   LCD_Clear(0xffff);
   FillRect(0, 0, 320, 80, 0xff00);
-  
+  //Se muestran los siguientes mensajes en la pantalla
   String text1 = "Proyecto Digital 2";
   LCD_Print(text1, 10, 10, 2, 0xffff, 0x00);
 
@@ -93,29 +99,34 @@ void setup() {
 // Loop Infinito
 //***************************************************************************************************************************************
 void loop() {
+  //Se leen los estados de los botones
   mandar = digitalRead(medir);
   memoria = digitalRead(guardar);
+  //Condicional para pedir un dato del esp32
   if(mandar == LOW){
     if(Serial2.available()){
+      //Se guarda el dato
       latido = Serial2.parseInt();
       if(latido >0){
+        //Se manda el dato de regreso al esp32
         Serial2.print("BPM: ");
         Serial2.println(latido);
-        String text3 = "BPM: ";
+        String text3 = "BPM: "; //Se declara para escribir en la pantalla
         if(latido<100){
-          text3 += "0";
+          text3 += "0"; //Se agregan ceros para que siempre muestre 3 digitos
         }
         if(latido<10){
           text3+= "0";
         }
-        text3 += String(latido);
+        text3 += String(latido); //Se añade el dato al texto que anteriormente se declaro
         LCD_Print(text3, 120, 130, 2, 0x00ff, 0x0f0f);
         if (latido > 59){
-          LCD_Bitmap(30, 110, 64, 65, fondo);
+          LCD_Bitmap(30, 110, 64, 65, fondo); //Muestra diferentes imagenes dependiendo del latido
         }
         else{
           LCD_Bitmap(30, 110, 70, 57, roto);
         }
+        //Melodia para que indique que si se leyo el dato
         for(int i = 0; i < 8; i++){
           int duracionNota = 1000/duracionNotas[i];
           tone(BUZZER, melodia[i],duracionNota);
@@ -126,14 +137,17 @@ void loop() {
       }
     }
   }
-  
+  //Condicional para guardar el dato en la micro SD
   if(memoria == LOW){
+    //Se abre el archivo 
     myFile = SD.open("pulso.txt", FILE_WRITE);
+    //Si se abre el archivo se guarda en la micro SD
     if (myFile){
       myFile.print("BPM: ");
       myFile.println(latido);
-      myFile.close();
+      myFile.close(); //Se cierra el documento
       Serial.println("Dato recibido");
+      //Melodia para que indique que se guardo el dato de manera correcta
       for(int i = 0; i < 8; i++){
         int duracion = 1000/duraciones[i];
         tone(BUZZER, gan_melody[i],duracion);
@@ -143,6 +157,7 @@ void loop() {
       }
     }
     else{
+      //Muestra este mensaje si no se abrio el archivo de manera correcta
       Serial.println("Error al abrir el archivo");
     }
   }
